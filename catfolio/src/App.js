@@ -14,9 +14,9 @@ function Landing({ onStart }) {
   return (
     <div className="landing">
       <div className="title-container">
-        <img src="/catfolio.png" alt="Catfolio Logo" className="animated-logo" />
+        <img src="assets/catfolio.png" alt="Catfolio Logo" className="animated-logo" />
         <img 
-          src="/fish_start.png" 
+          src="assets/buttons/fish_start.png" 
           alt="Start Game" 
           className="start-button-img" 
           onClick={onStart}
