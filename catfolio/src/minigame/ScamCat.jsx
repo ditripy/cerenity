@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './style/ScamCat.css';
 import backgroundBudget from '../assets/bg/background_budget.png';
+import budgetGameBg from '../assets/sounds/badcatmusic.wav';
+import headerImg from "../assets/scambanner.png";
+import noteImg from '../assets/spendingSorter/note.png';
 
 // Pool of message cards
 const MESSAGE_POOL = [
@@ -97,299 +100,308 @@ const MESSAGE_POOL = [
 ];
 
 function ScamCat({ onBack }) {
-  const [gameState, setGameState] = useState('instructions'); // instructions, playing, win, lose
+  const [gameState, setGameState] = useState('instructions');
   const [attempts, setAttempts] = useState(3);
   const [currentAttempt, setCurrentAttempt] = useState(1);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [gameCards, setGameCards] = useState([]);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [lastAnswer, setLastAnswer] = useState(null);
-  const [isCorrect, setIsCorrect] = useState(false);
+  const [cards, setCards] = useState([]);
+  const [cardIndex, setCardIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(15);
   const [timerActive, setTimerActive] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [lastAnswer, setLastAnswer] = useState(null);
   const [cardExiting, setCardExiting] = useState(false);
+  
+  const audioRef = useRef(null);
+  const [volume, setVolume] = useState(() => {
+    const saved = localStorage.getItem('gameVolume');
+    return saved !== null ? parseFloat(saved) : 50;
+  });
+  const [showSettings, setShowSettings] = useState(false);
   const timerRef = useRef(null);
 
-  // Shuffle and select 5 random cards for a new game
-  const startNewGame = () => {
+  /* =============================
+     AUDIO HANDLING
+  ============================= */
+  // Auto-play background music on mount
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100;
+      audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+    }
+  }, []);
+
+  // Update volume when changed
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100;
+    }
+  }, [volume]);
+
+  // Update localStorage when volume changes
+  useEffect(() => {
+    localStorage.setItem('gameVolume', volume.toString());
+  }, [volume]);
+
+  const handleVolumeChange = (e) => {
+    setVolume(parseFloat(e.target.value));
+  };
+
+  /* =============================
+     GAME START
+  ============================= */
+  const startGame = () => {
     const shuffled = [...MESSAGE_POOL].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 5);
-    setGameCards(selected);
-    setCurrentCardIndex(0);
+    setCards(shuffled.slice(0, 5));
+    setCardIndex(0);
     setTimeLeft(15);
+    setTimerActive(true);
     setGameState('playing');
     setShowFeedback(false);
-    setTimerActive(true);
   };
 
-  const handleAnswer = (playerAnswer) => {
-    setTimerActive(false);
-    
-    const currentCard = gameCards[currentCardIndex];
-    let correct = false;
-
-    if (playerAnswer === null) {
-      // Time ran out
-      correct = false;
-    } else {
-      correct = (playerAnswer === 'scam' && currentCard.isScam) || 
-                (playerAnswer === 'safe' && !currentCard.isScam);
-    }
-
-    setLastAnswer(playerAnswer);
-    setIsCorrect(correct);
-    setShowFeedback(true);
-
-    if (!correct) {
-      // Game over immediately on wrong answer
-      setTimeout(handleIncorrectAnswer, 3000);
-    } else {
-      // Correct answer
-      setTimeout(handleCorrectAnswerPhase1, 2500);
-    }
-  };
-
-  // Timer countdown
+  /* =============================
+     TIMER
+  ============================= */
   useEffect(() => {
     if (timerActive && timeLeft > 0 && gameState === 'playing' && !showFeedback) {
       timerRef.current = setTimeout(() => {
-        setTimeLeft(timeLeft - 1);
+        setTimeLeft(prev => prev - 1);
       }, 1000);
-    } else if (timeLeft === 0 && timerActive) {
-      // Time's up - counts as wrong answer
+    }
+
+    if (timeLeft === 0 && timerActive) {
       handleAnswer(null);
     }
 
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [timerActive, timeLeft, gameState, showFeedback]);
+    return () => clearTimeout(timerRef.current);
+  }, [timeLeft, timerActive, showFeedback, gameState]);
 
-  const handleIncorrectAnswer = () => {
+  /* =============================
+     ANSWER LOGIC
+  ============================= */
+  const handleAnswer = (answer) => {
+    setTimerActive(false);
+    const card = cards[cardIndex];
+
+    const correct =
+      answer !== null &&
+      ((answer === 'scam' && card.isScam) ||
+       (answer === 'safe' && !card.isScam));
+
+    setLastAnswer(answer);
+    setIsCorrect(correct);
+    setShowFeedback(true);
+
+    if (correct) {
+      setTimeout(handleCorrectPhase1, 2200);
+    } else {
+      setTimeout(handleWrong, 3000);
+    }
+  };
+
+  const handleWrong = () => {
     setShowFeedback(false);
     setAttempts(prev => prev - 1);
-    
+
     if (attempts - 1 <= 0) {
-      setGameState('lose');
+      setGameState('failed');
     } else {
-      // Reset for next attempt
       setCurrentAttempt(prev => prev + 1);
       setGameState('instructions');
     }
   };
 
-  const handleCorrectAnswerPhase2 = () => {
+  const handleCorrectPhase1 = () => {
+    setShowFeedback(false);
+    setCardExiting(true);
+    setTimeout(handleCorrectPhase2, 400);
+  };
+
+  const handleCorrectPhase2 = () => {
     setCardExiting(false);
-    if (currentCardIndex + 1 < gameCards.length) {
-      // Move to next card
-      setCurrentCardIndex(prev => prev + 1);
+    if (cardIndex + 1 < cards.length) {
+      setCardIndex(prev => prev + 1);
       setTimeLeft(15);
       setTimerActive(true);
     } else {
-      // Won the game!
-      setGameState('win');
+      setGameState('success');
     }
-  };
-
-  const handleCorrectAnswerPhase1 = () => {
-    setShowFeedback(false);
-    setCardExiting(true);
-    setTimeout(handleCorrectAnswerPhase2, 500);
-  };
-
-  const handleStartGame = () => {
-    startNewGame();
   };
 
   const resetGame = () => {
     setAttempts(3);
     setCurrentAttempt(1);
-    setCurrentCardIndex(0);
-    setGameCards([]);
-    setShowFeedback(false);
-    setLastAnswer(null);
+    setCards([]);
+    setCardIndex(0);
     setTimeLeft(15);
     setTimerActive(false);
     setGameState('instructions');
   };
 
-  const currentCard = gameCards[currentCardIndex];
-  const progress = ((currentCardIndex) / gameCards.length) * 100;
+  const card = cards[cardIndex];
+  const progress = (cardIndex / cards.length) * 100;
 
   return (
-    <div className="scam-cat" style={{ backgroundImage: `url(${backgroundBudget})` }}>
-      <div className="scam-background-overlay"></div>
+    <div className="spending-sorter" style={{ backgroundImage: `url(${backgroundBudget})` }}>
+      <audio ref={audioRef} loop>
+        <source src={budgetGameBg} type="audio/mpeg" />
+      </audio>
+      <div className="background-overlay"></div>
       
-      {/* Header */}
-      <div className="scam-header">
-        <button className="scam-back-button" onClick={onBack}>← Back</button>
-        <h2>🕵️ Scam Cat (Shady Whisk) 🐱‍💻</h2>
-        <div className="scam-stats">
-          <div className="hearts">
+      <div className="game-header">
+        <button className="back-button" onClick={onBack}>← Back</button>
+        <div className="header-controls">
+          <div className="attempt-display">Round: {currentAttempt}/3</div>
+          <div className="hearts-display">
             {[...Array(3)].map((_, i) => (
               <span key={i} className={i < attempts ? 'heart-full' : 'heart-empty'}>
                 {i < attempts ? '❤️' : '🖤'}
               </span>
             ))}
           </div>
+          <button className="settings-button" onClick={() => setShowSettings(!showSettings)}>⚙️</button>
         </div>
       </div>
 
-      {/* Instructions Overlay */}
-      {gameState === 'instructions' && (
-        <div className="scam-modal">
-          <div className="scam-modal-content instructions">
-            <h2>🐱‍💻 Scam Detection Challenge 🕵️</h2>
-            <div className="instructions-text">
-              <p><strong>Shady Whisk is trying to trick you!</strong></p>
-              <p>You'll see 5 messages. Decide if each is a <span className="scam-highlight">SCAM</span> or <span className="safe-highlight">SAFE</span>.</p>
-              
-              <div className="warning-box">
-                <p>⚠️ <strong>One mistake = Game Over</strong></p>
-                <p>You have <strong>{attempts} attempt{attempts === 1 ? '' : 's'}</strong> remaining</p>
-                <p>Each message has a <strong>15-second timer</strong></p>
-              </div>
-
-              <div className="tips-box">
-                <p><strong>🔍 Look for red flags:</strong></p>
-                <ul>
-                  <li>Urgent threats or deadlines</li>
-                  <li>Requests for money or personal info</li>
-                  <li>Too-good-to-be-true offers</li>
-                  <li>Suspicious links or unknown senders</li>
-                </ul>
-              </div>
-            </div>
-            <button onClick={handleStartGame}>
-              {currentAttempt === 1 ? 'Start Game' : `Attempt ${currentAttempt} of 3`}
-            </button>
-          </div>
+      {showSettings && (
+        <div className="settings-panel">
+          <label>Volume: {volume}%</label>
+          <input 
+            type="range" 
+            min="0" 
+            max="100" 
+            value={volume} 
+            onChange={handleVolumeChange}
+            className="volume-slider"
+          />
         </div>
       )}
 
-      {/* Game Area */}
-      {gameState === 'playing' && (
-        <div className="scam-game-area">
-          {/* Progress Bar */}
-          <div className="progress-container">
-            <div className="progress-bar" style={{ width: `${progress}%` }}></div>
-            <div className="progress-text">Message {currentCardIndex + 1} of {gameCards.length}</div>
-          </div>
-
-          {/* Timer */}
-          <div className="timer-container">
-            <div className={`timer ${timeLeft <= 5 ? 'timer-warning' : ''}`}>
-              ⏱️ {timeLeft}s
+      <div className="game-area">
+        {/* Game Info Panel */}
+        <div className="budget-info-panel">
+          <div className="budget-left">
+            <div className="budget-instructions">
+              <div>🕵️ Spot the SCAM or SAFE messages!</div>
+              <div>Don't let the shady cat trick you!</div>
             </div>
           </div>
+          <div className="budget-right" style={{ backgroundImage: `url(${noteImg})` }}>
+            <div>⏱️ 15 seconds per message</div>
+            <div>❌ Wrong = Lose 1 life</div>
+            <div>🎯 Get 5 correct to win!</div>
+          </div>
+        </div>
 
-          {/* Card Stack Effect */}
-          <div className="card-stack">
-            {/* Back cards for stack effect */}
-            {currentCardIndex + 1 < gameCards.length && (
-              <div className="message-card card-back-2"></div>
-            )}
-            {currentCardIndex + 2 < gameCards.length && (
-              <div className="message-card card-back-1"></div>
-            )}
-            
-            {/* Active Card */}
-            {currentCard && (
+        {/* Main Game Content - Centered */}
+        {gameState === 'playing' && card && (
+          <div className="scam-game-container">
+            {/* Progress & Timer Container */}
+            <div className="progress-timer-container">
+              <div className="progress-container">
+                <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+                <span className="progress-text">Message {cardIndex + 1} of {cards.length}</span>
+              </div>
+
+              <div className={`timer-display ${timeLeft <= 5 ? 'timer-warning' : ''}`}>
+                ⏱️ {timeLeft}s
+              </div>
+            </div>
+
+            {/* Centered Message Card */}
+            <div className="card-wrapper">
               <div className={`message-card ${cardExiting ? 'card-exit' : ''}`}>
-                <div className="card-header">
-                  <span className="sender-icon">📧</span>
-                  <span className="sender-name">Unknown Sender</span>
-                </div>
-                <div className="card-body">
-                  <p>{currentCard.text}</p>
+                <div className="message-content">
+                  <p className="message-text">{card.text}</p>
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Answer Buttons */}
-          <div className="answer-buttons">
-            <button 
-              className="answer-button scam-button-answer"
-              onClick={() => handleAnswer('scam')}
-              disabled={showFeedback}
-            >
-              <span className="button-icon">❌</span>
-              <span>SCAM</span>
-            </button>
-            <button 
-              className="answer-button safe-button-answer"
-              onClick={() => handleAnswer('safe')}
-              disabled={showFeedback}
-            >
-              <span className="button-icon">✅</span>
-              <span>SAFE</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Feedback Overlay */}
-      {showFeedback && (
-        <div className="feedback-overlay">
-          <div className={`feedback-content ${isCorrect ? 'correct' : 'incorrect'}`}>
-            <div className="feedback-icon">
-              {isCorrect ? '✅' : '❌'}
             </div>
-            {(() => {
-              let feedbackMessage;
-              if (isCorrect) {
-                feedbackMessage = 'Correct!';
-              } else if (lastAnswer === null) {
-                feedbackMessage = 'Time\'s Up!';
-              } else {
-                feedbackMessage = 'Wrong!';
-              }
-              return <h3>{feedbackMessage}</h3>;
-            })()}
-            <p className="feedback-explanation">{currentCard?.explanation}</p>
-          </div>
-        </div>
-      )}
 
-      {/* Win Modal */}
-      {gameState === 'win' && (
-        <div className="scam-modal">
-          <div className="scam-modal-content win">
-            <h2>🎉 You Blocked Scam Cat! 🎉</h2>
-            <div className="result-icon">😺🛡️</div>
-            <p className="result-message">
-              You spotted all the scams and stayed safe!
-            </p>
-            <p className="result-tip">
-              "Trust your instincts - if something feels off, it probably is!"
-            </p>
-            <div className="result-buttons">
-              <button className="scam-button" onClick={resetGame}>Play Again</button>
-              <button className="scam-button secondary" onClick={onBack}>Back to Menu</button>
+            {/* Answer Buttons */}
+            <div className="answer-buttons">
+              <button 
+                className="answer-btn scam-btn" 
+                onClick={() => handleAnswer('scam')}
+                disabled={showFeedback}
+              >
+                ❌ SCAM
+              </button>
+              <button 
+                className="answer-btn safe-btn" 
+                onClick={() => handleAnswer('safe')}
+                disabled={showFeedback}
+              >
+                ✅ SAFE
+              </button>
             </div>
           </div>
+        )}
+
+        {/* Feedback Overlay */}
+        {showFeedback && (
+          <div className="feedback-overlay">
+            <div className={`feedback-modal ${isCorrect ? 'correct-feedback' : 'wrong-feedback'}`}>
+              <div className="feedback-icon">
+                {isCorrect ? '✅' : lastAnswer === null ? '⏰' : '❌'}
+              </div>
+              <h3>{isCorrect ? 'Correct!' : lastAnswer === null ? 'Time\'s Up!' : 'Wrong!'}</h3>
+              <p className="feedback-explanation">{card?.explanation}</p>
+              <div className="feedback-consequence">
+                {isCorrect ? 'Moving to next message!' : 'You lost a life!'}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Instructions Modal */}
+      {gameState === 'instructions' && (
+        <div className="game-modal instructions-modal">
+          <div className="modal-content">
+            <div className="modal-image-container">
+              <img src={headerImg} alt="Scam Cat Challenge" className="modal-header-image" />
+              <div className="modal-text-overlay">
+                <p><strong>Shady Whiskers is trying to trick you!</strong></p>
+                <div className="budget-breakdown-overlay">
+                  <div>⏱️ 15 seconds per message</div>
+                  <div>❌ One wrong answer = lose a life</div>
+                  <div>❤️ 3 lives total</div>
+                  <div>🎯 Get 5 correct to win!</div>
+                </div>
+              </div>
+            </div>
+            <button onClick={startGame} className="start-btn">
+              {currentAttempt === 1 ? 'Start Challenge' : `Retry (${currentAttempt}/3)`}
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Lose Modal */}
-      {gameState === 'lose' && (
-        <div className="scam-modal">
-          <div className="scam-modal-content lose">
+      {/* Success Modal */}
+      {gameState === 'success' && (
+        <div className="game-modal success-modal">
+          <div className="modal-content">
+            <h2>🎉 You Beat the Scam Cat!</h2>
+            <div className="happy-cat">😺✨</div>
+            <p>You spotted all the scams like a pro!</p>
+            <p>"Shady Whiskers can't trick you anymore!"</p>
+            <button onClick={resetGame}>Play Again</button>
+            <button onClick={onBack}>Back to Menu</button>
+          </div>
+        </div>
+      )}
+
+      {/* Failed Modal */}
+      {gameState === 'failed' && (
+        <div className="game-modal failed-modal">
+          <div className="modal-content">
             <h2>😿 Scam Cat Got You!</h2>
-            <div className="result-icon">🐱‍💻💸</div>
-            <p className="result-message">
-              Don't worry - you've learned from the experience!
-            </p>
-            <p className="result-tip">
-              "Every mistake is a lesson in staying vigilant!"
-            </p>
-            <div className="result-buttons">
-              <button className="scam-button" onClick={resetGame}>Try Again</button>
-              <button className="scam-button secondary" onClick={onBack}>Back to Menu</button>
-            </div>
+            <div className="sad-cat">😿💸</div>
+            <p>The shady whiskers tricked you!</p>
+            <p>Watch out for urgency + threats + too-good-to-be-true offers!</p>
+            <button onClick={resetGame}>Try Again</button>
+            <button onClick={onBack}>Back to Menu</button>
           </div>
         </div>
       )}
