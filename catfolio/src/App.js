@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import catfolioLogo from './assets/catfolio.png';
 import fishStartButton from './assets/buttons/fish_start.png';
 import bgMusic from './assets/sounds/bgmusic.wav';
-import SpendingSorter from './components/SpendingSorter';
+import SpendingSorter from './minigame/SpendingSorter';
 
 function MainApp({ onBack, onNavigateToGame }) {
   return (

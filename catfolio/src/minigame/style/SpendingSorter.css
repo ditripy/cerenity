@@ -1,0 +1,315 @@
+.spending-sorter {
+  width: 100vw;
+  height: 100vh;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  overflow: hidden;
+}
+
+.background-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(245, 225, 200, 0.6);
+  backdrop-filter: blur(1px);
+  z-index: 1;
+}
+
+.game-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.back-button {
+  background: #ff9800;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.back-button:hover {
+  background: #ff5722;
+}
+
+.game-header h2 {
+  margin: 0;
+  color: #5d4037;
+  font-size: 1.5rem;
+}
+
+.game-stats {
+  display: flex;
+  gap: 1rem;
+  font-weight: bold;
+  color: #5d4037;
+}
+
+.game-instructions {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.3);
+  color: #5d4037;
+  font-weight: bold;
+  margin: 0 2rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+/* Budget targets panel should sit above the overlay and be easy to read */
+.budget-targets {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 1.2rem;
+  justify-content: center;
+  align-items: center;
+  margin: 0.8rem 2rem;
+  padding: 0.6rem 1rem;
+  background: rgba(255,255,255,0.92);
+  border-radius: 10px;
+  color: #5d4037;
+  font-weight: 700;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.game-area {
+  position: relative;
+  z-index: 2;
+  height: calc(100vh - 200px);
+  margin: 1rem;
+}
+
+.falling-item {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  transition: transform 0.2s ease;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 80px;
+}
+
+.falling-item:hover {
+  transform: scale(1.1);
+}
+
+.falling-item:active {
+  cursor: grabbing;
+}
+
+.item-emoji {
+  font-size: 1.5rem;
+}
+
+.item-name {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #5d4037;
+}
+
+.item-cost {
+  background: #ffd37a;
+  color: #6b3b00;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.buckets-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.bucket {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.8);
+  border: 3px dashed #ccc;
+  border-radius: 15px;
+  padding: 1rem;
+  text-align: center;
+  min-height: 150px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+
+.bucket:hover {
+  border-color: #ff9800;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.needs-bucket {
+  border-color: #4caf50;
+}
+
+.wants-bucket {
+  border-color: #ff9800;
+}
+
+.savings-bucket {
+  border-color: #2196f3;
+}
+
+.bucket h3 {
+  margin: 0 0 0.5rem 0;
+  color: #5d4037;
+  font-size: 1.2rem;
+}
+
+.bucket-percentage {
+  font-weight: bold;
+  color: #5d4037;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.bucket-total {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.bucket-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.bucket-item {
+  font-size: 1.2rem;
+  animation: bounceIn 0.5s ease;
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Game End Modals */
+.game-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h2 {
+  margin: 0 0 1rem 0;
+  color: #5d4037;
+}
+
+.happy-cat, .sad-cat {
+  font-size: 3rem;
+  margin: 1rem 0;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+.modal-content p {
+  margin: 1rem 0;
+  color: #5d4037;
+  line-height: 1.5;
+}
+
+.modal-content button {
+  background: #ff9800;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  margin: 0.5rem;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.modal-content button:hover {
+  background: #ff5722;
+  transform: translateY(-2px);
+}
+
+.success-modal .modal-content {
+  border: 3px solid #4caf50;
+}
+
+.failed-modal .modal-content {
+  border: 3px solid #f44336;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .buckets-container {
+    flex-direction: column;
+    height: 300px;
+    overflow-y: auto;
+  }
+  
+  .bucket {
+    min-height: 100px;
+    margin-bottom: 0.5rem;
+  }
+  
+  .falling-item {
+    font-size: 0.8rem;
+    padding: 0.3rem;
+  }
+}
