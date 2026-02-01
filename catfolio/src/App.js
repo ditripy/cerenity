@@ -8,6 +8,7 @@ import backgroundReveal from './assets/bg/background_reveal.jpg';
 import knockImg from './assets/knock.png';
 import knockSound from './assets/sounds/knock.wav';
 import tadaSound from './assets/sounds/tada.wav';
+import buttonPressSound from './assets/sounds/button_press.mp3';
 import catShadow from './assets/2_shadow.png';
 import catFull from './assets/cats/2.png';
 import questionImg from './assets/question.png';
@@ -29,6 +30,7 @@ function KnockScreen({ onComplete }) {
 
     // Play knock sound starting at 2 seconds
     if (audioRef.current) {
+      audioRef.current.volume = 1.0;
       audioRef.current.currentTime = 2.0;
       audioRef.current.play().catch(e => console.log('Audio play failed:', e));
     }
@@ -492,6 +494,7 @@ function Landing({ onStart }) {
   const [volume, setVolume] = useState(0.5);
   const [showSettings, setShowSettings] = useState(false);
   const audioRef = useRef(null);
+  const buttonAudioRef = useRef(null);
 
   // Try auto-play on mount and any interaction
   useEffect(() => {
@@ -506,8 +509,8 @@ function Landing({ onStart }) {
 
     tryPlay();
     
-    // Try to play on any user interaction
-    const interactions = ['click', 'touchstart', 'keydown'];
+    // Try to play on any user interaction including mouse movement
+    const interactions = ['click', 'touchstart', 'keydown', 'mousemove', 'mouseenter'];
     interactions.forEach(event => {
       document.addEventListener(event, tryPlay, { once: true });
     });
@@ -526,10 +529,20 @@ function Landing({ onStart }) {
     }
   }, [volume]);
 
+  const handleStartClick = () => {
+    if (buttonAudioRef.current) {
+      buttonAudioRef.current.play().catch(e => console.log('Button sound failed:', e));
+    }
+    onStart();
+  };
+
   return (
     <div className="landing">
-      <audio ref={audioRef} loop>
+      <audio ref={audioRef} loop autoPlay>
         <source src={bgMusic} type="audio/wav" />
+      </audio>
+      <audio ref={buttonAudioRef}>
+        <source src={buttonPressSound} type="audio/mpeg" />
       </audio>
       
       <div className="settings-button" onClick={() => setShowSettings(!showSettings)}>
@@ -560,7 +573,7 @@ function Landing({ onStart }) {
           src={fishStartButton} 
           alt="Start Game" 
           className="start-button-img" 
-          onClick={onStart}
+          onClick={handleStartClick}
           style={{cursor: 'pointer'}}
         />
       </div>
@@ -571,6 +584,7 @@ function Landing({ onStart }) {
 function App() {
   const [currentScreen, setCurrentScreen] = useState('landing'); // landing, knock, main, reveal-spending, spending-sorter, reveal-scamcat, scam-cat
   const [fadeOut, setFadeOut] = useState(false);
+  const [lastPlayedGame, setLastPlayedGame] = useState(null);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -591,8 +605,26 @@ function App() {
   };
 
   const goToMain = () => {
-    setCurrentScreen('main');
-    window.location.hash = '';
+    // Randomly choose a minigame, avoiding the last played game
+    const games = ['spending-sorter', 'scam-cat'];
+    let randomGame;
+    
+    if (lastPlayedGame === null) {
+      // First time, pick any game
+      randomGame = games[Math.floor(Math.random() * games.length)];
+    } else {
+      // Pick a different game from the last one
+      const availableGames = games.filter(game => game !== lastPlayedGame);
+      randomGame = availableGames[Math.floor(Math.random() * availableGames.length)];
+    }
+    
+    setLastPlayedGame(randomGame);
+    
+    if (randomGame === 'spending-sorter') {
+      goToRevealSpending();
+    } else {
+      goToRevealScamCat();
+    }
   };
 
   const goToLanding = () => {
@@ -631,7 +663,7 @@ function App() {
   if (currentScreen === 'spending-sorter') {
     return (
       <div style={{ opacity: fadeOut ? 0 : 1, transition: 'opacity 0.5s ease-in-out' }}>
-        <SpendingSorter onBack={() => setCurrentScreen('main')} />
+        <SpendingSorter onBack={goToLanding} />
       </div>
     );
   }
@@ -647,7 +679,7 @@ function App() {
   if (currentScreen === 'scam-cat') {
     return (
       <div style={{ opacity: fadeOut ? 0 : 1, transition: 'opacity 0.5s ease-in-out' }}>
-        <ScamCatGame onBack={() => setCurrentScreen('main')} />
+        <ScamCatGame onBack={goToLanding} />
       </div>
     );
   }
