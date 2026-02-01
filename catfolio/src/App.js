@@ -7,8 +7,55 @@ import SpendingSorter from './minigame/SpendingSorter';
 import ScamCatGame from './minigame/ScamCat';
 
 function MainApp({ onBack, onNavigateToGame }) {
+  const [volume, setVolume] = useState(() => {
+    const saved = localStorage.getItem('gameVolume');
+    return saved ? parseInt(saved) / 100 : 0.5;
+  });
+  const [showSettings, setShowSettings] = useState(false);
+  const audioRef = useRef(null);
+
+  // Auto-play on mount
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+      audioRef.current.play().catch(e => console.log('Audio autoplay prevented:', e));
+    }
+  }, []);
+
+  // Update volume
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+    localStorage.setItem('gameVolume', Math.round(volume * 100));
+  }, [volume]);
+
   return (
     <div className="main-app">
+      <audio ref={audioRef} loop>
+        <source src={bgMusic} type="audio/wav" />
+      </audio>
+
+      <div className="settings-button" onClick={() => setShowSettings(!showSettings)}>
+        ⚙️
+      </div>
+
+      {showSettings && (
+        <div className="settings-panel">
+          <label>Volume</label>
+          <input 
+            type="range" 
+            min="0" 
+            max="1" 
+            step="0.01" 
+            value={volume} 
+            onChange={(e) => setVolume(parseFloat(e.target.value))}
+            className="volume-slider"
+          />
+          <span>{Math.round(volume * 100)}%</span>
+        </div>
+      )}
+
       <button className="back-button" onClick={onBack}>← Back to Start</button>
       <h1>Catfolio 🐱</h1>
       <p>Collect cats. Learn money. Avoid scams.</p>
@@ -34,10 +81,36 @@ function Landing({ onStart }) {
   const [showSettings, setShowSettings] = useState(false);
   const audioRef = useRef(null);
 
+  // Try auto-play on mount and any interaction
+  useEffect(() => {
+    const tryPlay = () => {
+      if (audioRef.current) {
+        audioRef.current.volume = volume;
+        audioRef.current.play().catch(e => {
+          // Autoplay blocked, will play on first user interaction
+        });
+      }
+    };
+
+    tryPlay();
+    
+    // Try to play on any user interaction
+    const interactions = ['click', 'touchstart', 'keydown'];
+    interactions.forEach(event => {
+      document.addEventListener(event, tryPlay, { once: true });
+    });
+
+    return () => {
+      interactions.forEach(event => {
+        document.removeEventListener(event, tryPlay);
+      });
+    };
+  }, []);
+
+  // Update volume when changed
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
-      audioRef.current.play().catch(e => console.log('Audio autoplay prevented:', e));
     }
   }, [volume]);
 
