@@ -11,14 +11,7 @@ export const cats = [
     minigame: "stock-garden"
   },
   {
-    id: 2,
-    name: "Penny",
-    type: "good",
-    image: "/cats/2.png",
-    description: "I'll help you budget your fish!",
-    pitch: "Let me in and I'll help you organize your spending!",
-    lesson: "Keep track of where your fish go! Spend half on things you need, some on things you want, and save the rest.",
-    minigame: "spending-sorter"
+  
   },
   {
     id: 3,
