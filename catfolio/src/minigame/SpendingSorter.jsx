@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './SpendingSorter.css';
+import './style/SpendingSorter.css';
 import backgroundBudget from '../assets/bg/background_budget.png';
 import budgetGameBg from '../assets/sounds/budgetGameBg.mp3';
 import headerImg from '../assets/spendingSorter/header.png';
