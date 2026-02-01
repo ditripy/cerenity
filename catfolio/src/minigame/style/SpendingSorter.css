@@ -325,7 +325,7 @@
 }
 
 .scattered-item {
-  background-image: url('../assets/spendingSorter/money.png');
+  background-image: url('../../assets/spendingSorter/money.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -382,7 +382,7 @@
 
 .bucket {
   flex: 1;
-  background-image: url('../assets/spendingSorter/wallet.png');
+  background-image: url('../../assets/spendingSorter/wallet.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
