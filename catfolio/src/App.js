@@ -4,6 +4,7 @@ import catfolioLogo from './assets/catfolio.png';
 import fishStartButton from './assets/buttons/fish_start.png';
 import bgMusic from './assets/sounds/bgmusic.wav';
 import SpendingSorter from './minigame/SpendingSorter';
+import ScamCatGame from './minigame/ScamCat';
 
 function MainApp({ onBack, onNavigateToGame }) {
   const [volume, setVolume] = useState(() => {
@@ -64,6 +65,10 @@ function MainApp({ onBack, onNavigateToGame }) {
           <button className="game-button" onClick={() => onNavigateToGame('spending-sorter')}>
             🐱💰 Spending Sorter
             <small>Learn budgeting basics!</small>
+          </button>
+          <button className="game-button" onClick={() => onNavigateToGame('scam-cat')}>
+            🐱🕵️‍♂️ Scam Cat
+            <small>Spot scams & protect your tuna!</small>
           </button>
         </div>
       </div>
@@ -152,19 +157,17 @@ function Landing({ onStart }) {
 }
 
 function App() {
-  const [currentScreen, setCurrentScreen] = useState('landing'); // landing, main, spending-sorter
+  const [currentScreen, setCurrentScreen] = useState('landing'); // landing, main, spending-sorter, scam-cat
 
-  // Handle hash changes for navigation
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
-      if (hash === 'spending-sorter') {
-        setCurrentScreen('spending-sorter');
-      }
+      if (hash === 'spending-sorter') setCurrentScreen('spending-sorter');
+      if (hash === 'scam-cat') setCurrentScreen('scam-cat');
     };
 
     window.addEventListener('hashchange', handleHashChange);
-    handleHashChange(); // Check initial hash
+    handleHashChange();
 
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
@@ -184,8 +187,17 @@ function App() {
     window.location.hash = 'spending-sorter';
   };
 
+  const goToScamCat = () => {
+    setCurrentScreen('scam-cat');
+    window.location.hash = 'scam-cat';
+  };
+
   if (currentScreen === 'spending-sorter') {
     return <SpendingSorter onBack={() => setCurrentScreen('main')} />;
+  }
+
+  if (currentScreen === 'scam-cat') {
+    return <ScamCatGame onBack={() => setCurrentScreen('main')} />;
   }
 
   if (currentScreen === 'main') {
