@@ -15,6 +15,7 @@
   right: 0;
   bottom: 0;
   background: rgba(245, 225, 200, 0.3);
+  -webkit-backdrop-filter: blur(1px);
   backdrop-filter: blur(1px);
   z-index: 1;
 }
@@ -325,7 +326,7 @@
 }
 
 .scattered-item {
-  background-image: url('../assets/spendingSorter/money.png');
+  background-image: url('../../assets/spendingSorter/money.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -339,6 +340,7 @@
   align-items: center;
   gap: 0.8rem;
   min-width: 140px;
+  -webkit-user-select: none;
   user-select: none;
   -webkit-user-drag: element;
 }
@@ -382,7 +384,7 @@
 
 .bucket {
   flex: 1;
-  background-image: url('../assets/spendingSorter/wallet.png');
+  background-image: url('../../assets/spendingSorter/wallet.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
