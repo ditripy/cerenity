@@ -3,58 +3,107 @@ import './style/SpendingSorter.css';
 import backgroundBudget from '../assets/bg/background_budget.png';
 
 const ITEM_TYPES = {
-  FOOD: { name: 'food', category: 'needs', emoji: '🐟', points: 10, cost: 40 },
-  RENT: { name: 'rent', category: 'needs', emoji: '🏠', points: 15, cost: 400 },
-  MEDICINE: { name: 'medicine', category: 'needs', emoji: '💊', points: 12, cost: 60 },
-  GAMES: { name: 'games', category: 'wants', emoji: '🎮', points: 8, cost: 50 },
-  TOYS: { name: 'toys', category: 'wants', emoji: '🧸', points: 6, cost: 30 },
-  TREATS: { name: 'treats', category: 'wants', emoji: '🍪', points: 5, cost: 15 },
-  SAVINGS: { name: 'savings', category: 'savings', emoji: '🏛️', points: 20, cost: 100 },
-  EMERGENCY: { name: 'emergency', category: 'savings', emoji: '🆘', points: 25, cost: 200 }
+  // Needs - varying prices
+  FOOD_LOW: { name: 'food', category: 'needs', emoji: '🐟', points: 10, cost: 30 },
+  FOOD_MED: { name: 'food', category: 'needs', emoji: '🐟', points: 10, cost: 50 },
+  FOOD_HIGH: { name: 'food', category: 'needs', emoji: '🐟', points: 10, cost: 70 },
+  RENT_LOW: { name: 'rent', category: 'needs', emoji: '🏠', points: 15, cost: 300 },
+  RENT_MED: { name: 'rent', category: 'needs', emoji: '🏠', points: 15, cost: 500 },
+  RENT_HIGH: { name: 'rent', category: 'needs', emoji: '🏠', points: 15, cost: 700 },
+  MEDICINE_LOW: { name: 'medicine', category: 'needs', emoji: '💊', points: 12, cost: 40 },
+  MEDICINE_HIGH: { name: 'medicine', category: 'needs', emoji: '💊', points: 12, cost: 80 },
+  UTILITIES: { name: 'utilities', category: 'needs', emoji: '💡', points: 12, cost: 60 },
+  TRANSPORT: { name: 'transport', category: 'needs', emoji: '🚗', points: 10, cost: 100 },
+  INSURANCE: { name: 'insurance', category: 'needs', emoji: '🛡️', points: 13, cost: 90 },
+  
+  // Wants - varying prices
+  GAMES_LOW: { name: 'games', category: 'wants', emoji: '🎮', points: 8, cost: 30 },
+  GAMES_HIGH: { name: 'games', category: 'wants', emoji: '🎮', points: 8, cost: 60 },
+  TOYS_LOW: { name: 'toys', category: 'wants', emoji: '🧸', points: 6, cost: 20 },
+  TOYS_HIGH: { name: 'toys', category: 'wants', emoji: '🧸', points: 6, cost: 40 },
+  TREATS_LOW: { name: 'treats', category: 'wants', emoji: '🍪', points: 5, cost: 10 },
+  TREATS_HIGH: { name: 'treats', category: 'wants', emoji: '🍪', points: 5, cost: 25 },
+  MOVIES: { name: 'movies', category: 'wants', emoji: '🎬', points: 6, cost: 35 },
+  DINING: { name: 'dining', category: 'wants', emoji: '🍕', points: 7, cost: 45 },
+  CLOTHES_LOW: { name: 'clothes', category: 'wants', emoji: '👕', points: 7, cost: 50 },
+  CLOTHES_HIGH: { name: 'clothes', category: 'wants', emoji: '👕', points: 7, cost: 100 },
+  VACATION: { name: 'vacation', category: 'wants', emoji: '✈️', points: 9, cost: 150 },
+  
+  // Savings - varying amounts
+  SAVINGS_LOW: { name: 'savings', category: 'savings', emoji: '🏛️', points: 20, cost: 50 },
+  SAVINGS_MED: { name: 'savings', category: 'savings', emoji: '🏛️', points: 20, cost: 100 },
+  SAVINGS_HIGH: { name: 'savings', category: 'savings', emoji: '🏛️', points: 20, cost: 150 },
+  EMERGENCY_LOW: { name: 'emergency', category: 'savings', emoji: '🆘', points: 25, cost: 100 },
+  EMERGENCY_HIGH: { name: 'emergency', category: 'savings', emoji: '🆘', points: 25, cost: 200 },
+  INVESTMENT: { name: 'investment', category: 'savings', emoji: '📈', points: 22, cost: 120 }
 };
 
 function SpendingSorter({ onBack }) {
-  const [fallingItems, setFallingItems] = useState([]);
+  const [scatteredItems, setScatteredItems] = useState([]);
   const [buckets, setBuckets] = useState({
     needs: { items: [], totalPoints: 0, money: 0 },
     wants: { items: [], totalPoints: 0, money: 0 },
     savings: { items: [], totalPoints: 0, money: 0 }
   });
   const [money, setMoney] = useState(0);
-  const [gameState, setGameState] = useState('playing'); // playing, success, failed
+  const [gameState, setGameState] = useState('instructions'); // instructions, playing, success, failed
   const [score, setScore] = useState(0);
-  const [gameTime, setGameTime] = useState(60); // 60 seconds
   const gameAreaRef = useRef(null);
   const [draggedItem, setDraggedItem] = useState(null);
 
-  // helper to spawn a single item
-  const spawnItem = () => {
+  // Generate scattered items when game starts
+  const generateScatteredItems = () => {
     const itemTypes = Object.values(ITEM_TYPES);
-    const randomItem = itemTypes[Math.floor(Math.random() * itemTypes.length)];
-    const areaWidth = (gameAreaRef.current && gameAreaRef.current.clientWidth) ? gameAreaRef.current.clientWidth : 400;
-    const padding = 20; // keep items away from the absolute edges
-    const spawnX = Math.random() * Math.max(0, areaWidth - padding * 2) + padding;
-    const newItem = {
-      id: Date.now() + Math.random(),
-      ...randomItem,
-      x: spawnX, // Random x position within game area
-      y: -50, // Start above screen
-      speed: 1 + Math.random() * 2 // Random fall speed (slightly slower)
-    };
-
-    setFallingItems(prev => [...prev, newItem]);
-  };
-
-  // Spawn falling items periodically (faster)
-  useEffect(() => {
-    const spawnInterval = setInterval(() => {
-      if (gameState === 'playing' && gameTime > 0) {
-        spawnItem();
+    const numItems = 10 + Math.floor(Math.random() * 6); // 10-15 items
+    const items = [];
+    
+    const areaWidth = (gameAreaRef.current && gameAreaRef.current.clientWidth) ? gameAreaRef.current.clientWidth : 800;
+    const areaHeight = (gameAreaRef.current && gameAreaRef.current.clientHeight) ? gameAreaRef.current.clientHeight : 400;
+    const paddingX = 20;
+    const paddingTop = 20;
+    const bucketHeight = 200; // reserve space for buckets at bottom (min-height + padding)
+    const maxY = areaHeight - bucketHeight; // only spawn above buckets
+    const itemWidth = 120; // approximate item width with padding
+    const itemHeight = 50; // approximate item height
+    
+    // Check if two items overlap
+    const checkOverlap = (x, y, existingItems) => {
+      for (const existing of existingItems) {
+        const dx = Math.abs(x - existing.x);
+        const dy = Math.abs(y - existing.y);
+        if (dx < itemWidth && dy < itemHeight) {
+          return true; // overlapping
+        }
       }
-    }, 800); // spawn ~every 0.8s
-
-    return () => clearInterval(spawnInterval);
-  }, [gameState, gameTime]);
+      return false; // no overlap
+    };
+    
+    for (let i = 0; i < numItems; i++) {
+      const randomItem = itemTypes[Math.floor(Math.random() * itemTypes.length)];
+      let x, y;
+      let attempts = 0;
+      const maxAttempts = 50;
+      
+      // Try to find a non-overlapping position
+      do {
+        x = Math.random() * Math.max(0, areaWidth - paddingX * 2 - itemWidth) + paddingX;
+        y = paddingTop + Math.random() * Math.max(0, maxY - paddingTop * 2 - itemHeight);
+        attempts++;
+      } while (checkOverlap(x, y, items) && attempts < maxAttempts);
+      
+      // Only add if we found a valid position (or gave up after max attempts)
+      if (attempts < maxAttempts || items.length === 0) {
+        items.push({
+          id: Date.now() + Math.random() + i,
+          ...randomItem,
+          x,
+          y
+        });
+      }
+    }
+    
+    setScatteredItems(items);
+  };
 
   // initialize random starting money once
   useEffect(() => {
@@ -64,36 +113,11 @@ function SpendingSorter({ onBack }) {
     setMoney(startMoney);
   }, []);
 
-  // Game timer
-  useEffect(() => {
-    if (gameState === 'playing' && gameTime > 0) {
-      const timer = setTimeout(() => {
-        setGameTime(prev => prev - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (gameTime === 0) {
-      endGame();
-    }
-  }, [gameTime, gameState]);
 
-  // Move falling items
-  useEffect(() => {
-    const moveItems = setInterval(() => {
-      if (gameState === 'playing') {
-        setFallingItems(prev => {
-          const maxY = (gameAreaRef.current && gameAreaRef.current.clientHeight) ? gameAreaRef.current.clientHeight + 50 : 600;
-          return prev.map(item => ({ ...item, y: item.y + item.speed }))
-            .filter(item => item.y < maxY); // Remove items that fall off screen
-        });
-      }
-    }, 30); // slightly faster updates for smoother motion
-
-    return () => clearInterval(moveItems);
-  }, [gameState]);
 
   const handleItemDrop = (item, bucketType) => {
-    // Remove item from falling items
-    setFallingItems(prev => prev.filter(i => i.id !== item.id));
+    // Remove item from scattered items
+    setScatteredItems(prev => prev.filter(i => i.id !== item.id));
 
     if (bucketType === 'ignore') {
       // ignoring item: don't deduct money or change score
@@ -152,18 +176,32 @@ function SpendingSorter({ onBack }) {
     }
   };
 
+  const handleFinish = () => {
+    if (scatteredItems.length > 0) {
+      alert('Please sort all items or ignore them before finishing!');
+      return;
+    }
+    endGame();
+  };
+
   const resetGame = () => {
-    setFallingItems([]);
+    setScatteredItems([]);
     setBuckets({
       needs: { items: [], totalPoints: 0, money: 0 },
       wants: { items: [], totalPoints: 0, money: 0 },
       savings: { items: [], totalPoints: 0, money: 0 }
     });
-    setGameState('playing');
+    setGameState('instructions');
     setScore(0);
-    setGameTime(60);
-    // spawn a few initial items immediately so the player sees activity
-    setTimeout(() => { spawnItem(); spawnItem(); spawnItem(); }, 100);
+    // Generate new random money amount
+    const tens = Math.floor(Math.random() * 91) + 10;
+    const startMoney = tens * 10;
+    setMoney(startMoney);
+  };
+
+  const startGame = () => {
+    setGameState('playing');
+    setTimeout(() => generateScatteredItems(), 100);
   };
 
   const calculatePercentages = () => {
@@ -186,9 +224,11 @@ function SpendingSorter({ onBack }) {
         <button className="back-button" onClick={onBack}>← Back</button>
         <h2>Spending Sorter 🐱💰</h2>
         <div className="game-stats">
-          <div>Time: {gameTime}s</div>
           <div>Score: {score}</div>
           <div>Money: ${money}</div>
+          {gameState === 'playing' && (
+            <button className="finish-button" onClick={handleFinish}>Finish</button>
+          )}
         </div>
       </div>
 
@@ -204,20 +244,26 @@ function SpendingSorter({ onBack }) {
       </div>
 
       <div className="game-area" ref={gameAreaRef}>
-        {/* Falling Items */}
-        {fallingItems.map(item => (
+        {/* Scattered Items */}
+        {scatteredItems.map(item => (
           <div
             key={item.id}
-            className="falling-item"
+            className="scattered-item"
             style={{ 
               left: `${item.x}px`, 
               top: `${item.y}px`,
-              position: 'absolute'
+              position: 'absolute',
+              opacity: draggedItem && draggedItem.id === item.id ? 0.5 : 1
             }}
             draggable
             onDragStart={(e) => {
               setDraggedItem(item);
               e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', item.id);
+            }}
+            onDragEnd={(e) => {
+              // Reset opacity when drag ends
+              e.preventDefault();
             }}
           >
               <span className="item-emoji">{item.emoji}</span>
@@ -230,7 +276,10 @@ function SpendingSorter({ onBack }) {
         <div className="buckets-container">
           <div 
             className="bucket needs-bucket"
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+            }}
             onDrop={(e) => {
               e.preventDefault();
               if (draggedItem) {
@@ -240,7 +289,6 @@ function SpendingSorter({ onBack }) {
             }}
           >
             <h3>Needs 🏠</h3>
-            <div className="bucket-percentage">{percentages.needs}% (Target: 50%)</div>
             <div className="bucket-total">Allocated: ${buckets.needs.money}</div>
             <div className="bucket-items">
               {buckets.needs.items.map((item, index) => (
@@ -251,7 +299,10 @@ function SpendingSorter({ onBack }) {
 
           <div 
             className="bucket wants-bucket"
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+            }}
             onDrop={(e) => {
               e.preventDefault();
               if (draggedItem) {
@@ -261,7 +312,6 @@ function SpendingSorter({ onBack }) {
             }}
           >
             <h3>Wants 🎮</h3>
-            <div className="bucket-percentage">{percentages.wants}% (Target: 30%)</div>
             <div className="bucket-total">Allocated: ${buckets.wants.money}</div>
             <div className="bucket-items">
               {buckets.wants.items.map((item, index) => (
@@ -272,7 +322,10 @@ function SpendingSorter({ onBack }) {
 
           <div 
             className="bucket savings-bucket"
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+            }}
             onDrop={(e) => {
               e.preventDefault();
               if (draggedItem) {
@@ -282,7 +335,6 @@ function SpendingSorter({ onBack }) {
             }}
           >
             <h3>Savings 💰</h3>
-            <div className="bucket-percentage">{percentages.savings}% (Target: 20%)</div>
             <div className="bucket-total">Allocated: ${buckets.savings.money}</div>
             <div className="bucket-items">
               {buckets.savings.items.map((item, index) => (
@@ -294,7 +346,10 @@ function SpendingSorter({ onBack }) {
           {/* Ignore bucket */}
           <div 
             className="bucket ignore-bucket"
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+            }}
             onDrop={(e) => {
               e.preventDefault();
               if (draggedItem) {
@@ -312,6 +367,27 @@ function SpendingSorter({ onBack }) {
           </div>
         </div>
       </div>
+
+      {/* Instructions Modal */}
+      {gameState === 'instructions' && (
+        <div className="game-modal instructions-modal">
+          <div className="modal-content">
+            <h2>💰 Budget Challenge 🐱</h2>
+            <div className="instructions-text">
+              <p><strong>You have: ${money}</strong></p>
+              <p>Budget your money using the 50-30-20 rule:</p>
+              <div className="budget-breakdown">
+                <div>🏠 <strong>Needs (50%):</strong> ${Math.round(money * 0.5)}</div>
+                <div>🎮 <strong>Wants (30%):</strong> ${Math.round(money * 0.3)}</div>
+                <div>💰 <strong>Savings (20%):</strong> ${money - Math.round(money * 0.5) - Math.round(money * 0.3)}</div>
+              </div>
+              <p style={{ marginTop: '1rem' }}>Drag expenses to the right category!</p>
+              <p style={{ fontSize: '0.9rem', color: '#666' }}>Tip: Use the Ignore bucket if an expense doesn't fit your budget.</p>
+            </div>
+            <button onClick={startGame}>Start Game</button>
+          </div>
+        </div>
+      )}
 
       {/* Game End Modals */}
       {gameState === 'success' && (
