@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './style/SpendingSorter.css';
+import './SpendingSorter.css';
 import backgroundBudget from '../assets/bg/background_budget.png';
 import budgetGameBg from '../assets/sounds/budgetGameBg.mp3';
 import headerImg from '../assets/spendingSorter/header.png';
@@ -156,32 +156,20 @@ function SpendingSorter({ onBack }) {
   const endGame = () => {
     const totalMoney = buckets.needs.money + buckets.wants.money + buckets.savings.money;
     
-    // Check if player exceeded budget
+    // Check if player exceeded budget - only fail condition
     if (totalMoney > startingBudget) {
       setGameState('failed');
       return;
     }
     
+    // If didn't spend anything, fail
     if (totalMoney === 0) {
       setGameState('failed');
       return;
     }
 
-    // Calculate percentages based on starting budget
-    const needsPercent = (buckets.needs.money / startingBudget) * 100;
-    const wantsPercent = (buckets.wants.money / startingBudget) * 100;
-    const savingsPercent = (buckets.savings.money / startingBudget) * 100;
-
-    // Check if percentages are close to targets (50% needs, 30% wants, 20% savings)
-    const needsTarget = Math.abs(needsPercent - 50) <= 15;
-    const wantsTarget = Math.abs(wantsPercent - 30) <= 15;
-    const savingsTarget = Math.abs(savingsPercent - 20) <= 15;
-
-    if (needsTarget && wantsTarget && savingsTarget) {
-      setGameState('success');
-    } else {
-      setGameState('failed');
-    }
+    // Otherwise, player wins by staying within budget
+    setGameState('success');
   };
 
   const handleFinish = () => {
